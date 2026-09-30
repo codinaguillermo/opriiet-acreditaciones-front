@@ -92,7 +92,7 @@
                 <div class="card-content has-text-centered py-6">
                   <p class="mb-4" style="font-size: 4rem;">✅</p>
                   <p class="title is-3 texto-blanco has-text-weight-bold">Acreditar Inscriptos</p>
-                  <p class="subtitle is-5 texto-claro mt-3">Búsqueda rápida y check-in presencial.</p>
+                  <p class="subtitle is-5 texto-claro mt-3">Puesto de control de entrada y verificación de papeles.</p>
                 </div>
               </div>
             </div>
@@ -102,7 +102,7 @@
                 <div class="card-content has-text-centered py-6">
                   <p class="mb-4" style="font-size: 4rem;">📊</p>
                   <p class="title is-3 texto-blanco has-text-weight-bold">Asistencia en Tiempo Real</p>
-                  <p class="subtitle is-5 texto-claro mt-3">Monitoreo de ingresados y estadísticas.</p>
+                  <p class="subtitle is-5 texto-claro mt-3">Listado general de acreditados y pendientes (pestañas).</p>
                 </div>
               </div>
             </div>
@@ -120,7 +120,7 @@
             <div class="column is-12-mobile is-6-tablet is-4-desktop">
               <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('calificar')">
                 <div class="card-content has-text-centered py-5">
-                  <p class="mb-3" style="font-size: 3rem;">⚖️</p>
+                  <p class="mb-3" style="font-size: 3rem;">⚖</p>
                   <p class="title is-4 texto-blanco has-text-weight-bold">Calificación (Jueces)</p>
                   <p class="subtitle is-5 texto-claro mt-2">Evaluación de proyectos.</p>
                 </div>
@@ -145,8 +145,10 @@
               ← VOLVER AL PANEL
             </button>
 
-            <!-- Carga modular del componente de acreditación -->
+            <!-- Carga modular correcta según el botón seleccionado -->
             <Acreditar v-if="moduloSeleccionado === 'acreditar'" />
+            <Acreditaciones v-else-if="moduloSeleccionado === 'asistencia'" />
+            <Equipos v-else-if="moduloSeleccionado === 'equipos'" />
 
             <!-- Placeholders temporales para los próximos componentes -->
             <div v-else class="box caja-oscura p-6">
@@ -168,15 +170,19 @@
  * Propósito: Actuar como componente raíz (Shell) de la aplicación, controlando la autenticación segura 
  *            vía backend y el enrutamiento dinámico hacia los componentes desacoplados del sistema.
  * A quién alimenta: Al DOM principal de la aplicación en el navegador del usuario.
- * Qué datos retorna: Estado reactivo de sesión (vistaActual, claveIngresada, cargando) y selector de submódulos.
+ * Qué datos retorna: Estado reactivo de sesión y selector de submódulos.
  */
 import Acreditar from './components/Acreditar.vue';
+import Acreditaciones from './components/Acreditaciones.vue';
+import Equipos from './components/Equipos.vue';
 import api from './services/api';
 
 export default {
   name: 'App',
   components: {
-    Acreditar
+    Acreditar,
+    Acreditaciones,
+    Equipos
   },
   data() {
     return {
@@ -190,9 +196,9 @@ export default {
   methods: {
     /**
      * Propósito: Enviar la clave ingresada de forma segura al backend para su validación, 
-     *            evitando exponer la contraseña maestra en el código del navegador.
+     *            evitando exponer credenciales sensibles en el frontend.
      * A quién alimenta: Al formulario de autenticación en la vista de login.
-     * Qué datos retorna: Modifica el estado reactivo vistaActual a 'dashboard' o activa la bandera errorCredenciales.
+     * Qué datos retorna: Modifica el estado reactivo vistaActual a 'dashboard' o activa errorCredenciales.
      */
     async validarAcceso() {
       if (!this.claveIngresada || !this.claveIngresada.trim()) {
@@ -236,7 +242,7 @@ export default {
      * A quién alimenta: Al panel general y tarjetas de selección del dashboard.
      * Qué datos retorna: Actualiza la variable reactiva moduloSeleccionado con el identificador del módulo.
      * 
-     * @param {string} modulo - Identificador técnico del módulo seleccionado (ej. 'acreditar').
+     * @param {string} modulo - Identificador técnico del módulo seleccionado.
      */
     abrirModulo(modulo) {
       this.moduloSeleccionado = modulo;
