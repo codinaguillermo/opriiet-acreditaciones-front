@@ -122,17 +122,18 @@
                 <div class="card-content has-text-centered py-5">
                   <p class="mb-3" style="font-size: 3rem;">⚖</p>
                   <p class="title is-4 texto-blanco has-text-weight-bold">Calificación (Jueces)</p>
-                  <p class="subtitle is-5 texto-claro mt-2">Evaluación de proyectos.</p>
+                  <p class="subtitle is-5 texto-claro mt-2">Evaluaciones</p>
                 </div>
               </div>
             </div>
 
+            <!-- CAMBIADO: Ahora lleva a la vista general de Competencias -->
             <div class="column is-12-mobile is-6-tablet is-4-desktop">
-              <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('resultados')">
+              <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('competencias')">
                 <div class="card-content has-text-centered py-5">
                   <p class="mb-3" style="font-size: 3rem;">🏆</p>
-                  <p class="title is-4 texto-blanco has-text-weight-bold">Resultados y Podio</p>
-                  <p class="subtitle is-5 texto-claro mt-2">Orden de mérito final.</p>
+                  <p class="title is-4 texto-blanco has-text-weight-bold">Competencias</p>
+                  <p class="subtitle is-5 texto-claro mt-2">Robótica, Informática, Feria y más.</p>
                 </div>
               </div>
             </div>
@@ -145,15 +146,23 @@
               ← VOLVER AL PANEL
             </button>
 
-            <!-- Carga modular correcta según el botón seleccionado -->
+            <!-- Carga modular -->
             <Acreditar v-if="moduloSeleccionado === 'acreditar'" />
             <Acreditaciones v-else-if="moduloSeleccionado === 'asistencia'" />
             <Equipos v-else-if="moduloSeleccionado === 'equipos'" />
+            <MenuCompetencias 
+              v-else-if="moduloSeleccionado === 'competencias'" 
+              @seleccionar-modalidad="manejarSeleccionModalidad" 
+            />
+            <TorneoSumo 
+              v-else-if="moduloSeleccionado === 'torneo_sumo'" 
+              :modalidad-inicial="modalidadSeleccionadaId" 
+            />
 
-            <!-- Placeholders temporales para los próximos componentes -->
+            <!-- Placeholder para otros módulos -->
             <div v-else class="box caja-oscura p-6">
-              <h3 class="title is-2 texto-blanco has-text-weight-bold">Módulo: {{ moduloSeleccionado }}</h3>
-              <p class="subtitle is-4 texto-claro">Componente en proceso de desarrollo modular.</p>
+              <h3 class="title is-2 texto-blanco has-text-weight-bold">Módulo en Desarrollo</h3>
+              <p class="subtitle is-4 texto-claro">Esta sección estará disponible próximamente.</p>
             </div>
           </div>
 
@@ -166,15 +175,11 @@
 </template>
 
 <script>
-/**
- * Propósito: Actuar como componente raíz (Shell) de la aplicación, controlando la autenticación segura 
- *            vía backend y el enrutamiento dinámico hacia los componentes desacoplados del sistema.
- * A quién alimenta: Al DOM principal de la aplicación en el navegador del usuario.
- * Qué datos retorna: Estado reactivo de sesión y selector de submódulos.
- */
 import Acreditar from './components/Acreditar.vue';
 import Acreditaciones from './components/Acreditaciones.vue';
 import Equipos from './components/Equipos.vue';
+import MenuCompetencias from './components/MenuCompetencias.vue';
+import TorneoSumo from './components/TorneoSumo.vue';
 import api from './services/api';
 
 export default {
@@ -182,7 +187,9 @@ export default {
   components: {
     Acreditar,
     Acreditaciones,
-    Equipos
+    Equipos,
+    MenuCompetencias,
+    TorneoSumo
   },
   data() {
     return {
@@ -190,27 +197,19 @@ export default {
       claveIngresada: '',
       errorCredenciales: false,
       cargando: false,
-      moduloSeleccionado: null
+      moduloSeleccionado: null,
+      modalidadSeleccionadaId: null
     };
   },
   methods: {
-    /**
-     * Propósito: Enviar la clave ingresada de forma segura al backend para su validación, 
-     *            evitando exponer credenciales sensibles en el frontend.
-     * A quién alimenta: Al formulario de autenticación en la vista de login.
-     * Qué datos retorna: Modifica el estado reactivo vistaActual a 'dashboard' o activa errorCredenciales.
-     */
     async validarAcceso() {
-      if (!this.claveIngresada || !this.claveIngresada.trim()) {
-        return;
-      }
+      if (!this.claveIngresada || !this.claveIngresada.trim()) return;
       this.cargando = true;
       this.errorCredenciales = false;
       try {
         const respuesta = await api.post('/acreditaciones/login', {
           clave: this.claveIngresada.trim()
         });
-
         if (respuesta.data && respuesta.data.exito) {
           this.vistaActual = 'dashboard';
           this.claveIngresada = '';
@@ -225,43 +224,40 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Destruir la sesión activa del usuario y regresar a la pantalla inicial de acceso.
-     * A quién alimenta: Al botón "Cerrar Sesión" ubicado en la barra de navegación superior.
-     * Qué datos retorna: Restablece vistaActual a 'login' y limpia el módulo activo.
-     */
     cerrarSesion() {
       this.vistaActual = 'login';
       this.moduloSeleccionado = null;
+      this.modalidadSeleccionadaId = null;
       this.claveIngresada = '';
       this.errorCredenciales = false;
     },
 
-    /**
-     * Propósito: Definir qué submódulo funcional debe renderizarse dinámicamente en el área de trabajo.
-     * A quién alimenta: Al panel general y tarjetas de selección del dashboard.
-     * Qué datos retorna: Actualiza la variable reactiva moduloSeleccionado con el identificador del módulo.
-     * 
-     * @param {string} modulo - Identificador técnico del módulo seleccionado.
-     */
     abrirModulo(modulo) {
       this.moduloSeleccionado = modulo;
+      this.modalidadSeleccionadaId = null;
     },
 
-    /**
-     * Propósito: Ocultar el submódulo activo y retornar a la visualización de la cuadrícula general de opciones.
-     * A quién alimenta: Al botón "VOLVER AL PANEL" dentro de los submódulos.
-     * Qué datos retorna: Establece la variable moduloSeleccionado en null.
-     */
     volverAlMenu() {
       this.moduloSeleccionado = null;
+      this.modalidadSeleccionadaId = null;
+    },
+
+    manejarSeleccionModalidad(modalidad) {
+      // Si el usuario hace clic en Sumo Inicial o Avanzado, abrimos el fixture de Sumo
+      if (modalidad.tipo === 'sumo') {
+        this.modalidadSeleccionadaId = modalidad.id;
+        this.moduloSeleccionado = 'torneo_sumo';
+      } else {
+        // Para otras competencias que no sean sumo, podemos mostrar un aviso o vista general en el futuro
+        alert(`Has seleccionado: ${modalidad.nombre}. Módulo en desarrollo para esta categoría.`);
+      }
     }
   }
 };
 </script>
 
 <style>
-/* Estilos globales orientados a alto contraste y visibilidad en entornos iluminados */
+/* Estilos globales */
 html, body {
   background-color: #121b29;
   margin: 0;
