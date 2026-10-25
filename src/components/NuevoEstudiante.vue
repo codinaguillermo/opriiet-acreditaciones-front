@@ -6,7 +6,7 @@
       <div>
         <h3 class="title is-3 texto-blanco has-text-weight-bold mb-2">Alta de Estudiante Reemplazante</h3>
         <p class="subtitle is-5 texto-claro mb-0">
-          Registro individual de alumnos con documentación aprobada. Solo escuelas, categorías y modalidades preexistentes.
+          Registro individual de alumnos para múltiples modalidades.
         </p>
       </div>
       <div class="mt-3 mt-md-0">
@@ -22,126 +22,129 @@
       <span class="has-text-weight-semibold is-size-5">{{ notificacion.texto }}</span>
     </div>
 
-    <!-- FORMULARIO -->
     <form @submit.prevent="guardarEstudiante">
-      <div class="columns is-multiline">
-
-        <!-- 1. Selección de Escuela Existente -->
-        <div class="column is-12-mobile is-6-desktop">
-          <div class="field">
-            <label class="label texto-blanco is-size-5">Escuela</label>
-            <div class="control">
-              <div class="select is-large is-fullwidth">
-                <select 
-                  v-model="formulario.escuela_id" 
-                  required 
-                  class="has-text-weight-bold" 
-                  style="background-color: #0f172a; color: white; border: 2px solid #475569;"
-                >
-                  <option disabled value="">Seleccione la escuela de origen...</option>
-                  <option v-for="escuela in escuelasLista" :key="escuela.escuela_id" :value="escuela.escuela_id">
-                    {{ escuela.escuela_nombre }}
-                  </option>
-                </select>
+      
+      <!-- SECCIÓN 1: DATOS FIJOS DEL ALUMNO (ENCABEZADO) -->
+      <div class="box mb-5" style="background-color: #0f172a; border: 1px solid #334155;">
+        <h4 class="title is-5 texto-blanco mb-4 border-bottom pb-2">1. Datos Personales y Escuela</h4>
+        <div class="columns is-multiline">
+          
+          <div class="column is-12-mobile is-6-desktop">
+            <div class="field">
+              <label class="label texto-blanco">Escuela</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select v-model="formulario.escuela_id" required class="has-text-weight-bold input-oscuro">
+                    <option disabled value="">Seleccione la escuela de origen...</option>
+                    <option v-for="escuela in escuelasLista" :key="escuela.escuela_id" :value="escuela.escuela_id">
+                      {{ escuela.escuela_nombre }}
+                    </option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 2. DNI del Alumno -->
-        <div class="column is-12-mobile is-6-desktop">
-          <div class="field">
-            <label class="label texto-blanco is-size-5">DNI</label>
-            <div class="control">
-              <input 
-                type="text" 
-                v-model="formulario.dni" 
-                class="input is-large input-oscuro has-text-weight-bold" 
-                placeholder="EJ: 45123456" 
-                required 
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Apellidos y Nombres -->
-        <div class="column is-12">
-          <div class="field">
-            <label class="label texto-blanco is-size-5">Apellidos y Nombres Completos</label>
-            <div class="control">
-              <input 
-                type="text" 
-                v-model="formulario.alumno" 
-                class="input is-large input-oscuro has-text-weight-bold" 
-                placeholder="EJ: GÓMEZ, MARTÍN EDUARDO" 
-                required 
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Categoría -->
-        <div class="column is-12-mobile is-6-desktop">
-          <div class="field">
-            <label class="label texto-blanco is-size-5">Categoría</label>
-            <div class="control">
-              <div class="select is-large is-fullwidth">
-                <select 
-                  v-model="formulario.categoria_id" 
-                  @change="onCategoriaChange" 
-                  required 
-                  class="has-text-weight-bold" 
-                  style="background-color: #0f172a; color: white; border: 2px solid #475569;"
-                >
-                  <option disabled value="">Seleccione categoría...</option>
-                  <option v-for="cat in categoriasLista" :key="cat.categoria_id" :value="cat.categoria_id">
-                    {{ cat.categoria_nombre }}
-                  </option>
-                </select>
+          <div class="column is-12-mobile is-6-desktop">
+            <div class="field">
+              <label class="label texto-blanco">DNI</label>
+              <div class="control">
+                <input type="text" v-model="formulario.dni" class="input input-oscuro has-text-weight-bold" placeholder="EJ: 45123456" required />
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 5. Modalidad (Filtrada estrictamente por la categoría) -->
-        <div class="column is-12-mobile is-6-desktop">
-          <div class="field">
-            <label class="label texto-blanco is-size-5">Modalidad</label>
-            <div class="control">
-              <div class="select is-large is-fullwidth">
-                <select 
-                  v-model="formulario.modalidad_id" 
-                  :disabled="!formulario.categoria_id" 
-                  required 
-                  class="has-text-weight-bold" 
-                  style="background-color: #0f172a; color: white; border: 2px solid #475569;"
-                >
-                  <option disabled value="">
-                    {{ formulario.categoria_id ? 'Seleccione modalidad...' : 'Primero seleccione una categoría' }}
-                  </option>
-                  <option v-for="mod in modalidadesFiltradas" :key="mod.modalidad_id" :value="mod.modalidad_id">
-                    {{ mod.modalidad_nombre }}
-                  </option>
-                </select>
+          <div class="column is-12">
+            <div class="field">
+              <label class="label texto-blanco">Apellidos y Nombres Completos</label>
+              <div class="control">
+                <input type="text" v-model="formulario.alumno" class="input input-oscuro has-text-weight-bold" placeholder="EJ: GÓMEZ, MARTÍN EDUARDO" required />
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 6. Condición de Suplente -->
-        <div class="column is-12 mt-2">
-          <div class="field">
-            <label class="checkbox texto-blanco is-size-5 has-text-weight-bold">
-              <input type="checkbox" v-model="formulario.es_suplente" class="mr-2" style="transform: scale(1.3);" />
-              Marcar como alumno suplente
-            </label>
+          <div class="column is-12">
+            <div class="field">
+              <label class="checkbox texto-blanco has-text-weight-bold">
+                <input type="checkbox" v-model="formulario.es_suplente" class="mr-2" style="transform: scale(1.2);" />
+                Marcar como alumno suplente
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: SELECCIÓN MÚLTIPLE DE MODALIDADES (DETALLE) -->
+      <div class="box mb-5" style="background-color: #0f172a; border: 1px solid #334155;">
+        <h4 class="title is-5 texto-blanco mb-4 border-bottom pb-2">2. Asignación de Modalidades</h4>
+        
+        <div class="columns is-vcentered">
+          <div class="column is-4">
+            <div class="field">
+              <label class="label texto-blanco">Categoría</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select v-model="seleccionTemporal.categoria_id" @change="onCategoriaChange" class="has-text-weight-bold input-oscuro">
+                    <option disabled value="">Seleccione categoría...</option>
+                    <option v-for="cat in categoriasLista" :key="cat.categoria_id" :value="cat.categoria_id">
+                      {{ cat.categoria_nombre }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="column is-5">
+            <div class="field">
+              <label class="label texto-blanco">Modalidad</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select v-model="seleccionTemporal.modalidad_id" :disabled="!seleccionTemporal.categoria_id" class="has-text-weight-bold input-oscuro">
+                    <option disabled value="">{{ seleccionTemporal.categoria_id ? 'Seleccione modalidad...' : 'Primero seleccione categoría' }}</option>
+                    <option v-for="mod in modalidadesFiltradas" :key="mod.modalidad_id" :value="mod.modalidad_id">
+                      {{ mod.modalidad_nombre }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="column is-3 has-text-centered mt-4">
+            <button type="button" @click="agregarModalidad" :disabled="!seleccionTemporal.modalidad_id" class="button is-info has-text-weight-bold is-fullwidth">
+              ➕ Agregar a la lista
+            </button>
           </div>
         </div>
 
+        <!-- TABLA DE MODALIDADES SELECCIONADAS (LETRAS CLARAS, GRANDES Y BRILLANTES) -->
+        <div class="table-container mt-4" v-if="formulario.modalidadesSeleccionadas.length > 0">
+          <table class="table is-fullwidth is-bordered" style="background-color: #0f172a; border: 2px solid #475569;">
+            <thead>
+              <tr style="background-color: #1e293b;">
+                <th class="has-text-white has-text-weight-bold is-size-5">Categoría</th>
+                <th class="has-text-white has-text-weight-bold is-size-5">Modalidad</th>
+                <th class="has-text-centered has-text-white has-text-weight-bold is-size-5" style="width: 120px;">Quitar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in formulario.modalidadesSeleccionadas" :key="item.modalidad_id">
+                <td class="has-text-white has-text-weight-bold is-size-4">{{ item.categoria_nombre }}</td>
+                <td class="has-text-warning has-text-weight-bold is-size-4">{{ item.modalidad_nombre }}</td>
+                <td class="has-text-centered">
+                  <button type="button" @click="quitarModalidad(index)" class="button is-danger is-medium has-text-weight-bold">❌</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="notification is-warning is-light py-2 px-3 mt-3">
+          Aún no se han agregado modalidades para este alumno.
+        </div>
       </div>
 
       <!-- BOTONES DE ACCIÓN -->
-      <div class="field is-grouped mt-6">
+      <div class="field is-grouped mt-5">
         <div class="control">
           <button 
             type="submit" 
@@ -149,12 +152,12 @@
             :class="{ 'is-loading': guardando }"
             :disabled="!esFormularioValido"
           >
-            💾 REGISTRAR ALUMNO
+            💾 REGISTRAR INSCRIPCIONES
           </button>
         </div>
         <div class="control">
           <button type="button" @click="resetearFormulario" class="button is-dark is-large has-text-weight-bold">
-            LIMPIAR
+            LIMPIAR TODO
           </button>
         </div>
       </div>
@@ -164,12 +167,6 @@
 </template>
 
 <script>
-/**
- * Propósito: Componente independiente para gestionar el alta manual de estudiantes reemplazantes,
- *            asegurando el enlace con escuelas, categorías y modalidades preexistentes.
- * A quién alimenta: A la vista principal o al contenedor de módulos cuando se solicita nuevo estudiante.
- * Qué datos retorna: Envía la petición POST al backend con el nuevo registro de inscripto.
- */
 import api from '../services/api';
 
 export default {
@@ -185,23 +182,19 @@ export default {
         escuela_id: '',
         dni: '',
         alumno: '',
-        categoria_id: '',
-        modalidad_id: '',
-        es_suplente: false
+        es_suplente: false,
+        modalidadesSeleccionadas: []
       },
 
-      notificacion: {
-        texto: '',
-        tipo: 'exito'
-      }
+      seleccionTemporal: {
+        categoria_id: '',
+        modalidad_id: ''
+      },
+
+      notificacion: { texto: '', tipo: 'exito' }
     };
   },
   computed: {
-    /**
-     * Propósito: Extraer el catálogo único de categorías existentes a partir de las modalidades.
-     * A quién alimenta: Al selector desplegable de categorías en el template.
-     * Qué datos retorna: Array de objetos con categoria_id y categoria_nombre.
-     */
     categoriasLista() {
       const mapa = new Map();
       for (const item of this.modalidadesBrutas) {
@@ -214,25 +207,12 @@ export default {
       }
       return Array.from(mapa.values());
     },
-
-    /**
-     * Propósito: Filtrar estrictamente las modalidades pertenecientes a la categoría seleccionada,
-     *            impidiendo combinaciones incoherentes de modalidades.
-     * A quién alimenta: Al selector desplegable de modalidades en el template.
-     * Qué datos retorna: Array de modalidades hijas de la categoría activa.
-     */
     modalidadesFiltradas() {
-      if (!this.formulario.categoria_id) return [];
+      if (!this.seleccionTemporal.categoria_id) return [];
       return this.modalidadesBrutas.filter(
-        m => m.categoria_id === Number(this.formulario.categoria_id)
+        m => m.categoria_id === Number(this.seleccionTemporal.categoria_id)
       );
     },
-
-    /**
-     * Propósito: Validar que todos los campos requeridos tengan un valor cargado antes de permitir el envío.
-     * A quién alimenta: A la propiedad :disabled del botón de submit.
-     * Qué datos retorna: Boolean (true si es válido, false si falta algún dato).
-     */
     esFormularioValido() {
       return Boolean(
         this.formulario.escuela_id &&
@@ -240,8 +220,7 @@ export default {
         this.formulario.dni.trim() !== '' &&
         this.formulario.alumno &&
         this.formulario.alumno.trim() !== '' &&
-        this.formulario.categoria_id &&
-        this.formulario.modalidad_id
+        this.formulario.modalidadesSeleccionadas.length > 0
       );
     }
   },
@@ -249,70 +228,74 @@ export default {
     this.cargarCatalogos();
   },
   methods: {
-    /**
-     * Propósito: Consultar al backend las escuelas existentes y la estructura de categorías/modalidades.
-     * A quién alimenta: Al hook mounted() en el ciclo de vida inicial del componente.
-     * Qué datos retorna: Llena las variables reactivas escuelasLista y modalidadesBrutas.
-     */
     async cargarCatalogos() {
       try {
         const [resEscuelas, resModalidades] = await Promise.all([
           api.get('/acreditaciones/escuelas'),
           api.get('/equipos/categorias-modalidades')
         ]);
-
         if (resEscuelas.data && resEscuelas.data.exito) {
           this.escuelasLista = resEscuelas.data.data;
         }
-
         if (resModalidades.data && resModalidades.data.exito) {
           this.modalidadesBrutas = resModalidades.data.data;
         }
       } catch (error) {
-        console.error('Error al cargar catálogos maestros:', error);
+        console.error('Error al cargar catálogos:', error);
         this.mostrarNotificacion('Error al cargar listas de escuelas y modalidades.', 'error');
       }
     },
 
-    /**
-     * Propósito: Reiniciar la modalidad al cambiar la categoría para no dejar opciones incoherentes seleccionadas.
-     * A quién alimenta: Al evento @change del select de categoría.
-     * Qué datos retorna: Asigna valor vacío a formulario.modalidad_id.
-     */
     onCategoriaChange() {
-      this.formulario.modalidad_id = '';
+      this.seleccionTemporal.modalidad_id = '';
     },
 
-    /**
-     * Propósito: Enviar el registro del nuevo alumno reemplazante al backend.
-     * A quién alimenta: Al evento @submit.prevent del formulario principal.
-     * Qué datos retorna: Notificación de confirmación o error y emisión de evento.
-     */
-    async guardarEstudiante() {
-      if (!this.esFormularioValido) {
-        this.mostrarNotificacion('Debe completar todos los datos requeridos.', 'error');
+    agregarModalidad() {
+      const modId = this.seleccionTemporal.modalidad_id;
+      if (!modId) return;
+
+      const existe = this.formulario.modalidadesSeleccionadas.find(m => m.modalidad_id === modId);
+      if (existe) {
+        this.mostrarNotificacion('Esta modalidad ya fue agregada a la lista.', 'error');
         return;
       }
 
+      const modalidadData = this.modalidadesBrutas.find(m => m.modalidad_id === modId);
+      if (modalidadData) {
+        this.formulario.modalidadesSeleccionadas.push({
+          modalidad_id: modalidadData.modalidad_id,
+          modalidad_nombre: modalidadData.modalidad_nombre,
+          categoria_nombre: modalidadData.categoria_nombre
+        });
+      }
+
+      this.seleccionTemporal.categoria_id = '';
+      this.seleccionTemporal.modalidad_id = '';
+    },
+
+    quitarModalidad(index) {
+      this.formulario.modalidadesSeleccionadas.splice(index, 1);
+    },
+
+    async guardarEstudiante() {
+      if (!this.esFormularioValido) return;
       this.guardando = true;
+
+      const modalidadesIds = this.formulario.modalidadesSeleccionadas.map(m => m.modalidad_id);
 
       const payload = {
         escuela_id: this.formulario.escuela_id,
         dni: this.formulario.dni.trim(),
         alumno: this.formulario.alumno.trim().toUpperCase(),
-        modalidad_id: this.formulario.modalidad_id,
-        es_suplente: this.formulario.es_suplente
+        es_suplente: this.formulario.es_suplente,
+        modalidades: modalidadesIds
       };
 
       try {
         const respuesta = await api.post('/acreditaciones/inscriptos-nuevo', payload);
-        
         if (respuesta.data && respuesta.data.exito) {
-          this.mostrarNotificacion(
-            `Estudiante ${payload.alumno} registrado con éxito (ID: ${respuesta.data.inscripto_id}).`, 
-            'exito'
-          );
-          this.$emit('estudiante-creado', respuesta.data.inscripto_id);
+          this.mostrarNotificacion(`Estudiante ${payload.alumno} registrado en ${modalidadesIds.length} modalidades.`, 'exito');
+          this.$emit('estudiante-creado');
           this.resetearFormulario();
         }
       } catch (error) {
@@ -324,42 +307,25 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Restablecer todos los campos del formulario a sus valores iniciales en blanco.
-     * A quién alimenta: Al botón "LIMPIAR" y a guardarEstudiante tras un alta exitosa.
-     * Qué datos retorna: Limpia el objeto reactivo formulario.
-     */
     resetearFormulario() {
       this.formulario = {
         escuela_id: '',
         dni: '',
         alumno: '',
-        categoria_id: '',
-        modalidad_id: '',
-        es_suplente: false
+        es_suplente: false,
+        modalidadesSeleccionadas: []
       };
+      this.seleccionTemporal = { categoria_id: '', modalidad_id: '' };
     },
 
-    /**
-     * Propósito: Emitir el evento hacia el componente contenedor para regresar a la vista anterior.
-     * A quién alimenta: Al botón "⬅ Volver a Acreditaciones".
-     * Qué datos retorna: Emite el evento personalizado 'volver'.
-     */
     volver() {
       this.$emit('volver');
     },
 
-    /**
-     * Propósito: Mostrar avisos de éxito o error al usuario que se desvanecen automáticamente tras unos segundos.
-     * A quién alimenta: A las funciones guardarEstudiante y cargarCatalogos.
-     * Qué datos retorna: Asigna valores a notificacion y programa el timeout de limpieza.
-     */
     mostrarNotificacion(texto, tipo) {
       this.notificacion = { texto, tipo };
       setTimeout(() => {
-        if (this.notificacion.texto === texto) {
-          this.notificacion.texto = '';
-        }
+        if (this.notificacion.texto === texto) this.notificacion.texto = '';
       }, 5000);
     }
   }
@@ -385,7 +351,7 @@ export default {
 .input-oscuro::placeholder {
   color: #64748b !important;
 }
-.input-oscuro:focus {
+.input-oscuro:focus, .input-oscuro:active {
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 0.125em rgba(59, 130, 246, 0.25) !important;
 }

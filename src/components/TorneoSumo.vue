@@ -1,5 +1,13 @@
 <template>
-  <div class="box caja-oscura p-5">
+  <!-- VISTA SEPARADA DE LA PLANILLA DE FISCALIZACIÓN -->
+  <PlanillaSumoPrint 
+    v-if="mostrarVistaPlanilla" 
+    :datosPlanilla="jsonPayloadImpresion" 
+    @volver="mostrarVistaPlanilla = false" 
+  />
+
+  <!-- VISTA NORMAL DE GESTIÓN DEL TORNEO -->
+  <div v-else class="box caja-oscura p-5">
     <h3 class="title is-3 texto-blanco has-text-weight-bold mb-2">Gestión de Torneo: Sumo</h3>
     <p class="subtitle is-4 has-text-weight-bold mb-4" style="color: #ffffff !important;">Modalidad Activa: {{ nombreModalidadActiva }}</p>
 
@@ -34,6 +42,13 @@
             @click="cargarLlaves"
           >
             🔄 Actualizar
+          </button>
+          <button 
+            class="button is-dark has-text-weight-bold" 
+            @click="mostrarVistaPlanilla = true"
+            :disabled="combates.length === 0"
+          >
+            📄 Ver Planilla (Ronda {{ pestañaActiva }})
           </button>
           <button 
             class="button is-danger has-text-weight-bold" 
@@ -384,10 +399,20 @@
 </template>
 
 <script>
+/**
+ * Propósito: Gestionar el torneo de sumo (creación de llaves, registro de resultados, 
+ *            control de dohyo y entrega estructurada de datos para la vista separada de impresión).
+ * A quién alimenta: A la interfaz del operador en el evento y al componente PlanillaSumoPrint.
+ * Qué datos retorna: Lógica completa de estado del torneo y payload estructurado de impresión.
+ */
 import api from '../services/api';
+import PlanillaSumoPrint from './PlanillaSumoPrint.vue';
 
 export default {
   name: 'TorneoSumo',
+  components: {
+    PlanillaSumoPrint
+  },
   props: {
     modalidadInicial: {
       type: Number,
@@ -413,7 +438,8 @@ export default {
       mostrarModalReset: false,
       mostrarModalGranFinal: false,
       mensajeModalGranFinal: '',
-      campeonWO: null // <--- Estado para atrapar al campeón por abandono
+      campeonWO: null,
+      mostrarVistaPlanilla: false // <--- Estado puro para alternar a la vista separada de la planilla
     };
   },
   computed: {
@@ -430,7 +456,6 @@ export default {
       return combatesUltima.every(c => c.estado === 'finalizado');
     },
 
-    // MATRIZ DE CONTROL EN MEMORIA (FRONTEND) DE LA GRAN FINAL
     matrizGranFinal() {
       const combatesFinales = this.combates.filter(c => c.grupo === 'FINAL' && c.estado === 'finalizado');
       if (combatesFinales.length === 0) return null;
@@ -453,17 +478,13 @@ export default {
     },
 
     torneoFinalizado() {
-      // Detección especial de final por Abandono (W.O.) 
       if (this.campeonWO) return true;
-
       const matriz = this.matrizGranFinal;
       if (!matriz) return false;
-
       return matriz.some(row => row[3] >= 2);
     },
 
     equipoCampeon() {
-      // Si tenemos la data del campeón directo por W.O.
       if (this.campeonWO) return this.campeonWO;
 
       const finales = this.combates.filter(c => c.grupo === 'FINAL' && c.estado === 'finalizado');
@@ -496,8 +517,25 @@ export default {
       if (!matriz) return false;
 
       const combatesFinales = this.combates.filter(c => c.grupo === 'FINAL' && c.estado === 'finalizado');
-      
       return combatesFinales.length === 1 && matriz[0][3] === 1 && matriz[1][3] === 1;
+    },
+
+    /**
+     * Propósito: Construir el JSON / Payload puro y desacoplado con toda la información 
+     *            de la ronda activa para enviárselo a la vista separada de la planilla.
+     * A quién alimenta: A la prop `datosPlanilla` de PlanillaSumoPrint.
+     * Qué datos retorna: Objeto DTO estructurado con modalidad, ronda, pases libres y combates por grupo.
+     */
+    jsonPayloadImpresion() {
+      return {
+        nombreModalidad: this.nombreModalidadActiva,
+        rondaActual: this.pestañaActiva,
+        combatesZonaA: this.obtenerCombatesPorRondaYGrupo(this.pestañaActiva, 'A'),
+        combatesZonaB: this.obtenerCombatesPorRondaYGrupo(this.pestañaActiva, 'B'),
+        combatesFinal: this.obtenerCombatesPorRondaYGrupo(this.pestañaActiva, 'FINAL'),
+        paseLibreZonaA: this.pasesLibresZonaAPorRonda[this.pestañaActiva] || null,
+        paseLibreZonaB: this.pasesLibresZonaBPorRonda[this.pestañaActiva] || null
+      };
     }
   },
   mounted() {
@@ -567,11 +605,9 @@ export default {
       return this.combates.filter(c => c.ronda === ronda && c.grupo === grupo);
     },
 
-    // NUEVO MÉTODO: Calcula dinámicamente quién espera en la zona o si está vacía
     obtenerMensajeZonaVacia(rondaNum, grupo) {
       const equipos = new Map();
 
-      // Recopilamos a todos los equipos que participaron alguna vez
       this.combates.forEach(c => {
         if (c.robot_1_id && !equipos.has(c.robot_1_id)) {
             equipos.set(c.robot_1_id, { nombre: c.robot_1_nombre, derrotas: 0 });
@@ -581,7 +617,6 @@ export default {
         }
       });
 
-      // Sumamos las derrotas únicamente hasta la ronda ANTERIOR a la que estamos mirando
       const combatesPrevios = this.combates.filter(c => c.ronda < rondaNum && c.estado === 'finalizado' && c.grupo !== 'FINAL');
       
       combatesPrevios.forEach(c => {
@@ -591,7 +626,6 @@ export default {
             equipos.get(perdedor_id).derrotas++;
           }
         } else if (c.ganador_id === null && c.robot_1_id && c.robot_2_id) {
-          // Doble descalificación suma a ambos
           if (equipos.has(c.robot_1_id)) equipos.get(c.robot_1_id).derrotas++;
           if (equipos.has(c.robot_2_id)) equipos.get(c.robot_2_id).derrotas++;
         }
@@ -646,15 +680,12 @@ export default {
         const respuesta = await api.post('/torneo/sorteo-siguiente-ronda', payload);
 
         if (respuesta.data && respuesta.data.exito) {
-          
-          // LÓGICA DE ABANDONO / W.O. REPORTADA POR EL ÁRBITRO
           if (respuesta.data.torneo_finalizado) {
             this.mensajeExito = respuesta.data.mensaje;
             
             const campeonId = respuesta.data.campeon_absoluto_id;
             let datosCampeon = { nombre_equipo: 'Equipo #' + campeonId, escuela_nombre: 'Escuela No Especificada' };
             
-            // Buscamos el nombre para el cartel azul sin pedirle nada más a la BD
             for (const c of this.combates) {
               if (c.robot_1_id === campeonId) {
                 datosCampeon = { nombre_equipo: c.robot_1_nombre, escuela_nombre: c.ganador_escuela_nombre || 'Escuela No Especificada' }; 
@@ -671,7 +702,6 @@ export default {
             return;
           }
 
-          // LÓGICA NORMAL DE RONDA O GRAN FINAL
           if (respuesta.data.modal_aviso) {
             this.mensajeModalGranFinal = respuesta.data.modal_aviso;
             this.mostrarModalGranFinal = true;
@@ -684,7 +714,6 @@ export default {
           
           await this.cargarLlaves();
         } else if (respuesta.data && !respuesta.data.exito) {
-          // LÓGICA DE TORNEO DESIERTO O ERROR LÓGICO
           this.mensajeError = respuesta.data.error || 'Ocurrió un problema al sortear la siguiente ronda.';
         }
       } catch (error) {
