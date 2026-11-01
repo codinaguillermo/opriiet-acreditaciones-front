@@ -1,12 +1,18 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   server: {
     watch: {
-      usePolling: true // Fuerza la detección de cambios en entornos complejos
+      usePolling: true
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 })
