@@ -75,7 +75,7 @@
       <section class="section is-medium">
         <div class="container">
           
-          <!-- Encabezado con Logo Centrado (Solo visible en el menú principal) -->
+          <!-- Encabezado con Logo Centrado -->
           <div class="mb-6 has-text-centered" v-if="moduloSeleccionado === null">
             <figure class="image mb-4 is-flex is-justify-content-center">
               <img src="./assets/logoOPRIIET.jpg" alt="Logo OPRIIET" class="logo-dashboard-header" />
@@ -127,13 +127,31 @@
               </div>
             </div>
 
-            <!-- CAMBIADO: Ahora lleva a la vista general de Competencias -->
             <div class="column is-12-mobile is-6-tablet is-4-desktop">
               <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('competencias')">
                 <div class="card-content has-text-centered py-5">
                   <p class="mb-3" style="font-size: 3rem;">🏆</p>
                   <p class="title is-4 texto-blanco has-text-weight-bold">Competencias</p>
                   <p class="subtitle is-5 texto-claro mt-2">Robótica, Informática, Feria y más.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="column is-12-mobile is-6-tablet is-4-desktop">
+              <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('docentes')">
+                <div class="card-content has-text-centered py-5">
+                  <p class="mb-3" style="font-size: 3rem;">👨‍🏫</p>
+                  <p class="title is-4 texto-blanco has-text-weight-bold">Docentes Referentes</p>
+                  <p class="subtitle is-5 texto-claro mt-2">Gestión por escuela y modalidad.</p>
+                </div>
+              </div>
+            </div>
+            <div class="column is-12-mobile is-6-tablet is-4-desktop">
+              <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('sorteo_jueces')">
+                <div class="card-content has-text-centered py-5">
+                  <p class="mb-3" style="font-size: 3rem;">🤖</p>
+                  <p class="title is-4 texto-blanco has-text-weight-bold">ROBOTICA: Sorteo de Jurado</p>
+                  <p class="subtitle is-5 texto-claro mt-2">Asignar titulares y suplentes.</p>
                 </div>
               </div>
             </div>
@@ -148,7 +166,10 @@
 
             <!-- Carga modular -->
             <Acreditar v-if="moduloSeleccionado === 'acreditar'" />
-            <Acreditaciones v-else-if="moduloSeleccionado === 'asistencia'" />
+            <Acreditaciones 
+              v-else-if="moduloSeleccionado === 'asistencia'" 
+              @ver-docentes="abrirModulo('docentes')"
+            />
             <Equipos v-else-if="moduloSeleccionado === 'equipos'" />
             <MenuCompetencias 
               v-else-if="moduloSeleccionado === 'competencias'" 
@@ -158,6 +179,10 @@
               v-else-if="moduloSeleccionado === 'torneo_sumo'" 
               :modalidad-inicial="modalidadSeleccionadaId" 
             />
+            <DocentesView v-else-if="moduloSeleccionado === 'docentes'" />
+            
+            <!-- 👉 AGREGAR ESTA LÍNEA ACÁ -->
+            <SorteoJuecesView v-else-if="moduloSeleccionado === 'sorteo_jueces'" />
 
             <!-- Placeholder para otros módulos -->
             <div v-else class="box caja-oscura p-6">
@@ -171,6 +196,22 @@
 
     </div>
 
+    <!-- MODAL DE ADVERTENCIA (MÓDULO EN DESARROLLO) -->
+    <div class="modal" :class="{ 'is-active': modalAdvertencia.mostrar }">
+      <div class="modal-background" @click="cerrarModalAdvertencia"></div>
+      <div class="modal-content">
+        <div class="box caja-oscura has-text-centered p-6" style="border: 2px solid #eab308;">
+          <p class="mb-4" style="font-size: 4rem;">🚧</p>
+          <h3 class="title is-3 texto-blanco has-text-weight-bold">Construcción en Curso</h3>
+          <p class="subtitle is-5 texto-claro mt-4">{{ modalAdvertencia.mensaje }}</p>
+          <button class="button is-warning is-medium mt-5 has-text-weight-bold" @click="cerrarModalAdvertencia">
+            Entendido
+          </button>
+        </div>
+      </div>
+      <button class="modal-close is-large" aria-label="close" @click="cerrarModalAdvertencia"></button>
+    </div>
+
   </div>
 </template>
 
@@ -180,6 +221,8 @@ import Acreditaciones from './components/Acreditaciones.vue';
 import Equipos from './components/Equipos.vue';
 import MenuCompetencias from './components/MenuCompetencias.vue';
 import TorneoSumo from './components/TorneoSumo.vue';
+import DocentesView from './components/DocentesView.vue';
+import SorteoJuecesView from './components/SorteoJuecesView.vue';
 import api from './services/api';
 
 export default {
@@ -189,7 +232,9 @@ export default {
     Acreditaciones,
     Equipos,
     MenuCompetencias,
-    TorneoSumo
+    TorneoSumo,
+    DocentesView,
+    SorteoJuecesView
   },
   data() {
     return {
@@ -198,7 +243,11 @@ export default {
       errorCredenciales: false,
       cargando: false,
       moduloSeleccionado: null,
-      modalidadSeleccionadaId: null
+      modalidadSeleccionadaId: null,
+      modalAdvertencia: {
+        mostrar: false,
+        mensaje: ''
+      }
     };
   },
   methods: {
@@ -223,7 +272,6 @@ export default {
         this.cargando = false;
       }
     },
-
     cerrarSesion() {
       this.vistaActual = 'login';
       this.moduloSeleccionado = null;
@@ -231,26 +279,26 @@ export default {
       this.claveIngresada = '';
       this.errorCredenciales = false;
     },
-
     abrirModulo(modulo) {
       this.moduloSeleccionado = modulo;
       this.modalidadSeleccionadaId = null;
     },
-
     volverAlMenu() {
       this.moduloSeleccionado = null;
       this.modalidadSeleccionadaId = null;
     },
-
     manejarSeleccionModalidad(modalidad) {
-      // Si el usuario hace clic en Sumo Inicial o Avanzado, abrimos el fixture de Sumo
       if (modalidad.tipo === 'sumo') {
         this.modalidadSeleccionadaId = modalidad.id;
         this.moduloSeleccionado = 'torneo_sumo';
       } else {
-        // Para otras competencias que no sean sumo, podemos mostrar un aviso o vista general en el futuro
-        alert(`Has seleccionado: ${modalidad.nombre}. Módulo en desarrollo para esta categoría.`);
+        this.modalAdvertencia.mensaje = `Seleccionaste "${modalidad.nombre}". El módulo para gestionar esta categoría estará disponible en la próxima actualización.`;
+        this.modalAdvertencia.mostrar = true;
       }
+    },
+    cerrarModalAdvertencia() {
+      this.modalAdvertencia.mostrar = false;
+      this.modalAdvertencia.mensaje = '';
     }
   }
 };
@@ -264,40 +312,33 @@ html, body {
   padding: 0;
   min-height: 100vh;
 }
-
 .contenedor-principal {
   background-color: #121b29;
   min-height: 100vh;
 }
-
 .texto-blanco { color: #ffffff !important; }
 .texto-claro { color: #f1f5f9 !important; }
-
 .caja-oscura {
   background-color: #1e293b !important;
   border: 2px solid #334155;
   border-radius: 16px;
   box-shadow: 0 15px 30px rgba(0,0,0,0.6);
 }
-
 .input-oscuro {
   background-color: #0f172a !important;
   border: 2px solid #475569 !important;
   color: #ffffff !important;
   letter-spacing: 1px;
 }
-
 .input-oscuro::placeholder { 
   color: #94a3b8 !important; 
   opacity: 1 !important;
   font-weight: 600;
 }
-
 .input-oscuro:focus { 
   border-color: #3b82f6 !important; 
   box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.4);
 }
-
 .btn-ingreso {
   background-color: #2563eb !important;
   letter-spacing: 2px;
@@ -308,18 +349,15 @@ html, body {
   transform: scale(1.02);
   transition: transform 0.2s;
 }
-
 .nav-oscura,
 .nav-oscura .navbar-brand,
 .nav-oscura .navbar-item {
   background-color: #1e293b !important;
   color: #ffffff !important;
 }
-
 .nav-oscura {
   border-bottom: 2px solid #334155;
 }
-
 .tarjeta-opcion {
   background-color: #1e293b !important;
   border: 2px solid #475569;
@@ -333,12 +371,10 @@ html, body {
   box-shadow: 0 10px 25px rgba(96, 165, 250, 0.3);
   background-color: #233147 !important;
 }
-
 .logo-img-grande { 
   max-width: 320px; 
   border-radius: 8px; 
 }
-
 .logo-dashboard-header {
   max-width: 280px;
   border-radius: 8px;
