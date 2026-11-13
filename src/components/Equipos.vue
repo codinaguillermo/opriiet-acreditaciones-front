@@ -303,6 +303,7 @@
               <th class="texto-blanco">Escuela</th>
               <th class="texto-blanco">Categoría / Modalidad</th>
               <th class="texto-blanco">Integrantes</th>
+              <th class="texto-blanco has-text-centered">Presente (Sorteo)</th>
               <th class="texto-blanco has-text-centered">Acciones</th>
             </tr>
           </thead>
@@ -326,7 +327,7 @@
                 </span>
               </td>
 
-              <!-- Integrantes (Compactos con opción de desplegar) -->
+              <!-- Integrantes -->
               <td class="is-vcentered">
                 <div class="is-flex is-align-items-center">
                   <span class="tag is-dark is-medium mr-2 has-text-weight-bold" style="background-color: #1e293b; color: #f1f5f9; border: 1px solid #475569;">
@@ -337,7 +338,6 @@
                   </button>
                 </div>
 
-                <!-- Panel desplegable individual con letras grandes y de alto contraste -->
                 <div v-if="equipoExpandidoId === equipo.equipo_id" class="mt-2 p-3" style="background-color: #090d16; border: 2px solid #3b82f6; border-radius: 8px;">
                   <p v-for="ing in equipo.integrantes" :key="ing.inscripto_id" class="is-size-5 mb-2 has-text-weight-bold" style="color: #fbbf24;">
                     👤 <span style="color: #ffffff;">{{ ing.alumno }}</span> <span style="color: #94a3b8; font-size: 0.9rem;">(DNI: {{ ing.dni }})</span>
@@ -345,7 +345,19 @@
                 </div>
               </td>
 
-              <!-- Acciones (Edición y Eliminación Inline) -->
+              <!-- Botón de Presencia para el Sorteo -->
+              <td class="has-text-centered is-vcentered">
+                <button 
+                  type="button" 
+                  @click="togglePresencia(equipo)" 
+                  class="button is-small has-text-weight-bold"
+                  :class="equipo.presente ? 'is-success' : 'is-dark'"
+                  :title="equipo.presente ? 'Equipo presente para el sorteo' : 'Equipo ausente'">
+                  {{ equipo.presente ? '✅ PRESENTE' : '❌ AUSENTE' }}
+                </button>
+              </td>
+
+              <!-- Acciones -->
               <td class="has-text-centered is-vcentered">
                 <div v-if="equipoAEliminarId === equipo.equipo_id">
                   <span class="tag is-danger is-small has-text-weight-bold mb-1">¿Eliminar?</span><br/>
@@ -375,7 +387,7 @@
 <script>
 /**
  * Propósito: Proveer la interfaz completa para la gestión, armado, edición y listado general compacto de equipos,
- *            con selectores avanzados de filtrado por categoría y modalidad, buscador y panel desplegable de alto contraste.
+ *            con selectores avanzados de filtrado por categoría y modalidad, buscador, panel desplegable y control de presencia.
  * A quién alimenta: Al componente principal App.vue cuando se selecciona el módulo de equipos.
  * Qué datos retorna: Peticiones HTTP vía Axios para gestionar equipos y estados reactivos validados.
  */
@@ -403,7 +415,6 @@ export default {
       alumnosRaw: [],
       integrantesSeleccionados: [],
       
-      // Controles de filtrado y visualización del listado
       filtroTexto: '',
       filtroCategoriaId: '',
       filtroModalidadId: '',
@@ -417,9 +428,6 @@ export default {
     };
   },
   computed: {
-    /**
-     * Propósito: Extraer la lista única de categorías disponibles a partir del listado bruto de modalidades.
-     */
     categoriasLista() {
       const mapa = new Map();
       for (const item of this.modalidadesLista) {
@@ -433,17 +441,11 @@ export default {
       return Array.from(mapa.values());
     },
 
-    /**
-     * Propósito: Filtrar las modalidades disponibles para el panel de filtros según la categoría seleccionada en el filtro.
-     */
     modalidadesFiltradasParaFiltro() {
       if (!this.filtroCategoriaId) return this.modalidadesLista;
       return this.modalidadesLista.filter(m => m.categoria_id === Number(this.filtroCategoriaId));
     },
 
-    /**
-     * Propósito: Agrupar los resultados de la búsqueda de alumnos por DNI único para evitar duplicados en la tabla.
-     */
     alumnosUnicos() {
       const mapa = new Map();
       for (const item of this.alumnosRaw) {
@@ -459,20 +461,14 @@ export default {
       return Array.from(mapa.values());
     },
 
-    /**
-     * Propósito: Filtrar el listado general de equipos combinando selectores de categoría, modalidad y texto libre.
-     */
     equiposFiltrados() {
       return this.equiposLista.filter(eq => {
-        // Filtro por Categoría
         if (this.filtroCategoriaId && eq.categoria_id !== Number(this.filtroCategoriaId)) {
           return false;
         }
-        // Filtro por Modalidad
         if (this.filtroModalidadId && eq.modalidad_id !== Number(this.filtroModalidadId)) {
           return false;
         }
-        // Filtro por Texto libre (Equipo o Escuela)
         if (this.filtroTexto && this.filtroTexto.trim() !== '') {
           const termino = this.filtroTexto.toLowerCase().trim();
           const coincideTexto = eq.nombre_equipo.toLowerCase().includes(termino) ||
@@ -483,9 +479,6 @@ export default {
       });
     },
 
-    /**
-     * Propósito: Validar de manera estricta que todos los campos obligatorios del equipo estén completos.
-     */
     esFormularioValido() {
       const nombreValido = this.formulario.nombre_equipo && this.formulario.nombre_equipo.trim() !== '';
       const categoriaValida = this.formulario.categoria_id !== '' && this.formulario.categoria_id !== null;
@@ -500,17 +493,11 @@ export default {
     this.obtenerEquipos();
   },
   methods: {
-    /**
-     * Propósito: Filtrar las modalidades en el formulario principal de alta/edición según la categoría seleccionada.
-     */
     modalidadesFiltradasPorCategoria(categoriaId) {
       if (!categoriaId) return [];
       return this.modalidadesLista.filter(m => m.categoria_id === Number(categoriaId));
     },
 
-    /**
-     * Propósito: Controlar la visualización desplegable de los integrantes de un equipo específico en la tabla.
-     */
     toggleDetalleEquipo(equipoId) {
       if (this.equipoExpandidoId === equipoId) {
         this.equipoExpandidoId = null;
@@ -519,23 +506,14 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Manejar el evento de cambio en el selector de categoría del formulario principal.
-     */
     onCategoriaChange() {
       this.formulario.modalidad_id = '';
     },
 
-    /**
-     * Propósito: Manejar el cambio en el selector de categoría de los filtros generales, reseteando la modalidad seleccionada en el filtro.
-     */
     onFiltroCategoriaChange() {
       this.filtroModalidadId = '';
     },
 
-    /**
-     * Propósito: Alternar entre la vista de creación/edición y el listado general de equipos.
-     */
     cambiarVista(vista) {
       this.vistaActiva = vista;
       if (vista === 'listar') {
@@ -544,9 +522,6 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Obtener el listado de categorías y modalidades desde el backend para los selectores.
-     */
     async obtenerModalidades() {
       try {
         const respuesta = await api.get('/equipos/categorias-modalidades');
@@ -558,9 +533,6 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Obtener el listado completo de equipos registrados con sus escuelas y alumnos integrantes.
-     */
     async obtenerEquipos() {
       this.cargandoListado = true;
       try {
@@ -576,11 +548,22 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Buscar inscriptos en la base de datos filtrados estrictamente por la modalidad seleccionada y el término de búsqueda.
-     */
+    // NUEVO MÉTODO: Alternar el estado de presencia del equipo antes del sorteo
+    async togglePresencia(equipo) {
+      try {
+        const nuevoEstado = equipo.presente ? 0 : 1;
+        const respuesta = await api.put(`/equipos/${equipo.equipo_id}/presencia`, { presente: nuevoEstado });
+        if (respuesta.data && respuesta.data.exito) {
+          equipo.presente = nuevoEstado;
+          this.mostrarMensaje(`Equipo "${equipo.nombre_equipo}" marcado como ${nuevoEstado ? 'PRESENTE' : 'AUSENTE'}.`, 'exito');
+        }
+      } catch (error) {
+        console.error('Error al actualizar presencia:', error);
+        this.mostrarMensaje('No se pudo actualizar el estado de presencia.', 'error');
+      }
+    },
+
     async buscarAlumnos() {
-      // Regla de negocio: Obligatorio seleccionar modalidad antes de buscar
       if (!this.formulario.modalidad_id) {
         this.mostrarMensaje('Debe seleccionar una categoría y una modalidad antes de buscar integrantes.', 'error');
         return;
@@ -610,9 +593,6 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Agregar un alumno seleccionado a la lista temporal de integrantes validando que no esté duplicado.
-     */
     agregarIntegrante(alumno) {
       const existe = this.integrantesSeleccionados.some(i => i.inscripto_id === alumno.inscripto_id);
       if (existe) {
@@ -623,16 +603,10 @@ export default {
       this.mostrarMensaje(`Alumno ${alumno.alumno} agregado correctamente.`, 'exito');
     },
 
-    /**
-     * Propósito: Quitar un integrante de la lista temporal de formación del equipo.
-     */
     quitarIntegrante(index) {
       this.integrantesSeleccionados.splice(index, 1);
     },
 
-    /**
-     * Propósito: Enviar los datos validados del formulario al backend para su almacenamiento.
-     */
     async guardarEquipo() {
       if (!this.esFormularioValido) {
         this.mostrarMensaje('Complete todos los campos obligatorios y agregue al menos un integrante.', 'error');
@@ -665,9 +639,6 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Cargar los datos de un equipo existente en el formulario para su edición.
-     */
     cargarEquipoParaEditar(equipo) {
       this.modoEdicion = true;
       this.equipoIdEditando = equipo.equipo_id;
@@ -689,9 +660,6 @@ export default {
       this.vistaActiva = 'crear';
     },
 
-    /**
-     * Propósito: Ejecutar la eliminación física de un equipo en el backend tras la confirmación inline.
-     */
     async ejecutarEliminacionEquipo(equipoId) {
       try {
         await api.delete(`/equipos/${equipoId}`);
@@ -705,17 +673,11 @@ export default {
       }
     },
 
-    /**
-     * Propósito: Cancelar el proceso de creación o edición, retornando al listado general.
-     */
     cancelarEdicion() {
       this.resetearFormulario();
       this.cambiarVista('listar');
     },
 
-    /**
-     * Propósito: Restablecer todos los campos del formulario y estados reactivos.
-     */
     resetearFormulario() {
       this.formulario.nombre_equipo = '';
       this.formulario.categoria_id = '';
@@ -732,9 +694,6 @@ export default {
       this.equipoExpandidoId = null;
     },
 
-    /**
-     * Propósito: Mostrar notificaciones visuales temporales de éxito o error en la interfaz.
-     */
     mostrarMensaje(texto, tipo) {
       this.mensajeModal = { texto, tipo };
       setTimeout(() => {
