@@ -114,10 +114,22 @@
           </table>
         </div>
 
-        <!-- OBSERVACIONES (Tampoco se corta a la mitad) -->
-        <div class="observaciones mt-6 fila-no-cortar">
+        <!-- OBSERVACIONES -->
+        <div class="observaciones mt-5 mb-6 fila-no-cortar">
           <h5 class="has-text-black has-text-weight-bold is-size-6 mb-2">OBSERVACIONES / INCIDENCIAS:</h5>
           <div class="lineas-observaciones"></div>
+        </div>
+
+        <!-- FIRMA Y ACLARACIÓN DEL ÁRBITRO / JUEZ (NUEVO) -->
+        <div class="bloque-firma mt-6 pt-5 fila-no-cortar">
+          <div class="columns is-centered">
+            <div class="column is-8 has-text-centered">
+              <div class="linea-firma mb-2"></div>
+              <p class="has-text-black has-text-weight-bold is-size-6">
+                Árbitro / Juez (firma y aclaración): __________________________________________
+              </p>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -176,6 +188,9 @@ export default {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   font-family: Arial, sans-serif;
   color: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Distribuye el contenido para que la firma quede prolijamente abajo en la hoja A4 */
 }
 
 .has-text-black {
@@ -204,8 +219,13 @@ export default {
 
 .lineas-observaciones {
   width: 100%;
-  height: 100px;
+  height: 80px;
   border: 1px solid #000;
+}
+
+.bloque-firma {
+  margin-top: auto; /* Empuja la firma hacia la parte inferior de la hoja A4 */
+  padding-top: 20px;
 }
 </style>
 

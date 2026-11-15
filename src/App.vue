@@ -146,12 +146,24 @@
                 </div>
               </div>
             </div>
+
             <div class="column is-12-mobile is-6-tablet is-4-desktop">
               <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('sorteo_jueces')">
                 <div class="card-content has-text-centered py-5">
                   <p class="mb-3" style="font-size: 3rem;">🤖</p>
                   <p class="title is-4 texto-blanco has-text-weight-bold">ROBOTICA: Sorteo de Jurado</p>
                   <p class="subtitle is-5 texto-claro mt-2">Asignar titulares y suplentes.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- NUEVA TARJETA: SORTEO DE PREMIOS -->
+            <div class="column is-12-mobile is-6-tablet is-4-desktop">
+              <div class="card tarjeta-opcion h-100 p-4" @click="abrirModulo('sorteo_premios')">
+                <div class="card-content has-text-centered py-5">
+                  <p class="mb-3" style="font-size: 3rem;">🎁</p>
+                  <p class="title is-4 texto-blanco has-text-weight-bold">Sorteo de Premios</p>
+                  <p class="subtitle is-5 texto-claro mt-2">Selección aleatoria entre participantes.</p>
                 </div>
               </div>
             </div>
@@ -180,11 +192,14 @@
               :modalidad-inicial="modalidadSeleccionadaId" 
             />
             <DocentesView v-else-if="moduloSeleccionado === 'docentes'" />
-            
-            <!-- 👉 AGREGAR ESTA LÍNEA ACÁ -->
             <SorteoJuecesView v-else-if="moduloSeleccionado === 'sorteo_jueces'" />
+            
+            <SorteoPremiosView 
+              v-else-if="moduloSeleccionado === 'sorteo_premios'" 
+              @volver="volverAlMenu" 
+            />
 
-            <!-- Placeholder para otros módulos -->
+            <!-- Placeholder genérico para otros módulos -->
             <div v-else class="box caja-oscura p-6">
               <h3 class="title is-2 texto-blanco has-text-weight-bold">Módulo en Desarrollo</h3>
               <p class="subtitle is-4 texto-claro">Esta sección estará disponible próximamente.</p>
@@ -223,6 +238,7 @@ import MenuCompetencias from './components/MenuCompetencias.vue';
 import TorneoSumo from './components/TorneoSumo.vue';
 import DocentesView from './components/DocentesView.vue';
 import SorteoJuecesView from './components/SorteoJuecesView.vue';
+import SorteoPremiosView from './components/SorteoPremiosView.vue';
 import api from './services/api';
 
 export default {
@@ -234,7 +250,8 @@ export default {
     MenuCompetencias,
     TorneoSumo,
     DocentesView,
-    SorteoJuecesView
+    SorteoJuecesView,
+    SorteoPremiosView
   },
   data() {
     return {
